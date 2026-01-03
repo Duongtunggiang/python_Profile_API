@@ -17,6 +17,8 @@ from Entity.contract import CreateContractRequest, UpdateContractRequest
 from Entity.achievement import CreateAchievementRequest, UpdateAchievementRequest
 from Entity.product import CreateProductRequest, UpdateProductRequest
 from Entity.product_image import CreateProductImageRequest, UpdateProductImageRequest
+from Entity.skill import CreateSkillRequest, UpdateSkillRequest
+from Entity.target import CreateTargetRequest, UpdateTargetRequest
 from Service.auth_service import AuthService
 from Service.profile_service import ProfileService
 from Service.image_service import ImageService
@@ -27,6 +29,8 @@ from Service.contract_service import ContractService
 from Service.achievement_service import AchievementService
 from Service.product_service import ProductService
 from Service.product_image_service import ProductImageService
+from Service.skill_service import SkillService
+from Service.target_service import TargetService
 
 app = FastAPI()
 
@@ -127,16 +131,20 @@ async def get_public_profile_all():
     try:
         # Lấy profile đầu tiên
         profile_res = await ProfileService.get_public_profile()
-        if not profile_res.get("data"):
+        
+        if not profile_res or not profile_res.get("data"):
             return {
                 "status": "success",
                 "message": "No profile found",
                 "profile": None,
-                "images": [],
-                "educations": [],
-                "jobs": [],
-                "languages": [],
-                "contracts": []
+                "images": {"data": []},
+                "educations": {"data": []},
+                "jobs": {"data": []},
+                "languages": {"data": []},
+                "contracts": {"data": []},
+                "achievements": {"data": []},
+                "products": {"data": []},
+                "product_images": {"data": []}
             }
         
         user_id = profile_res["data"]["id"]
@@ -151,6 +159,8 @@ async def get_public_profile_all():
         achievements = await AchievementService.get_public_achievements(user_id)
         products = await ProductService.get_public_products(user_id)
         product_images = await ProductImageService.get_public_product_images(user_id)
+        skills = await SkillService.get_public_skills(user_id)
+        targets = await TargetService.get_public_targets(user_id)
 
         return {
             "status": "success",
@@ -162,7 +172,9 @@ async def get_public_profile_all():
             "contracts": contracts,
             "achievements": achievements,
             "products": products,
-            "product_images": product_images
+            "product_images": product_images,
+            "skills": skills,
+            "targets": targets
         }
     except Exception as e:
         from fastapi import HTTPException
@@ -530,3 +542,65 @@ async def update_product_image(image_id: str, data: UpdateProductImageRequest, t
 async def delete_product_image(image_id: str, token: str):
     """Xóa product image"""
     return await ProductImageService.delete_product_image(image_id, token)
+
+
+# ========== SKILLS ROUTES ==========
+@app.post("/skills")
+async def create_skill(data: CreateSkillRequest, token: str):
+    """Tạo skill mới"""
+    return await SkillService.create_skill(data, token)
+
+
+@app.get("/skills")
+async def get_skills(token: str):
+    """Lấy tất cả skills của user"""
+    return await SkillService.get_skills(token)
+
+
+@app.get("/skills/{skill_id}")
+async def get_skill(skill_id: str, token: str):
+    """Lấy skill theo ID"""
+    return await SkillService.get_skill(skill_id, token)
+
+
+@app.put("/skills/{skill_id}")
+async def update_skill(skill_id: str, data: UpdateSkillRequest, token: str):
+    """Cập nhật skill"""
+    return await SkillService.update_skill(skill_id, data, token)
+
+
+@app.delete("/skills/{skill_id}")
+async def delete_skill(skill_id: str, token: str):
+    """Xóa skill"""
+    return await SkillService.delete_skill(skill_id, token)
+
+
+# ========== TARGETS ROUTES ==========
+@app.post("/targets")
+async def create_target(data: CreateTargetRequest, token: str):
+    """Tạo target mới"""
+    return await TargetService.create_target(data, token)
+
+
+@app.get("/targets")
+async def get_targets(token: str):
+    """Lấy tất cả targets của user"""
+    return await TargetService.get_targets(token)
+
+
+@app.get("/targets/{target_id}")
+async def get_target(target_id: str, token: str):
+    """Lấy target theo ID"""
+    return await TargetService.get_target(target_id, token)
+
+
+@app.put("/targets/{target_id}")
+async def update_target(target_id: str, data: UpdateTargetRequest, token: str):
+    """Cập nhật target"""
+    return await TargetService.update_target(target_id, data, token)
+
+
+@app.delete("/targets/{target_id}")
+async def delete_target(target_id: str, token: str):
+    """Xóa target"""
+    return await TargetService.delete_target(target_id, token)

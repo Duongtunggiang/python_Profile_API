@@ -39,3 +39,18 @@ def serialize_dates(data: Dict[str, Any]) -> Dict[str, Any]:
             serialized[key] = value
     return serialized
 
+
+def get_public_client():
+    """Tạo Supabase client mới với service role key để bypass RLS cho public endpoints"""
+    import os
+    from dotenv import load_dotenv
+    
+    load_dotenv()
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(status_code=500, detail="SUPABASE_SERVICE_ROLE_KEY not configured")
+    
+    # Tạo client mới mỗi lần để tránh bị ảnh hưởng bởi authentication state
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)

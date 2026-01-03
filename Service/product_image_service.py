@@ -120,8 +120,8 @@ class ProductImageService:
     async def get_public_product_images(user_id: str, product_id: str = None):
         """Lấy tất cả product images public của user (không cần token)"""
         try:
-            from Connection import connection
-            client = connection.get_supabase_client()
+            from Service.base_service import get_public_client
+            client = get_public_client()
             if product_id:
                 response = client.table("productImages").select("*").eq("product_id", product_id).execute()
             else:

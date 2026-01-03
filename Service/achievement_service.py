@@ -87,8 +87,8 @@ class AchievementService:
     async def get_public_achievements(user_id: str):
         """Lấy tất cả achievements public của user (không cần token)"""
         try:
-            from Connection import connection
-            client = connection.get_supabase_client()
+            from Service.base_service import get_public_client
+            client = get_public_client()
             response = client.table("achievements").select("*").eq("profile_id", user_id).execute()
             return {"status": "success", "data": response.data if response.data else [], "count": len(response.data) if response.data else 0}
         except Exception as e:

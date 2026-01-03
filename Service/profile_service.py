@@ -70,8 +70,9 @@ class ProfileService:
     async def get_public_profile(user_id: str = None):
         """Lấy profile public (không cần token) - lấy profile đầu tiên hoặc theo user_id"""
         try:
-            from Connection import connection
-            client = connection.get_supabase_client()
+            # Tạo client mới với service role key để bypass RLS
+            from Service.base_service import get_public_client
+            client = get_public_client()
             
             if user_id:
                 response = client.table("duong").select("*").eq("id", user_id).execute()

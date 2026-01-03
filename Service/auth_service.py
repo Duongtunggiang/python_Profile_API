@@ -19,6 +19,10 @@ class AuthService:
             if response.user is None:
                 raise HTTPException(status_code=401, detail="Invalid credentials")
             
+            # Kiểm tra session
+            if not response.session:
+                raise HTTPException(status_code=401, detail="Session not created. Please check your credentials.")
+            
             return {
                 "status": "success",
                 "message": "Login successful",
@@ -27,7 +31,7 @@ class AuthService:
                     "email": response.user.email,
                     "created_at": response.user.created_at,
                 },
-                "access_token": response.session.access_token if response.session else None,
+                "access_token": response.session.access_token,
             }
         except Exception as e:
             error_message = str(e)
