@@ -1,0 +1,71 @@
+# Test your FastAPI endpoints
+
+GET http://127.0.0.1:8000/
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8000/hello/Duong
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8000/all
+Accept: application/json
+
+###
+
+# Test Login
+POST http://127.0.0.1:8000/login
+Content-Type: application/json
+
+{
+  "email": "alernwad113@gmail.com",
+  "password": "Duong3112"
+}
+
+###
+
+# Test Register
+POST http://127.0.0.1:8000/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "secure_password_123"
+}
+
+###
+
+# Test Get Current User (sau khi login, copy access_token từ response)
+GET http://127.0.0.1:8000/users/me?token=
+Accept: application/json
+
+###
+
+# Test Get Profile (sau khi login, copy access_token từ response)
+GET http://127.0.0.1:8000/profile?token=
+Accept: application/json
+
+###
+
+# Test Update Profile (sau khi login, copy access_token từ response)
+POST http://127.0.0.1:8000/profile?token=
+Content-Type: application/json
+
+{
+  "first_name": "Tung",
+  "last_name": "Duong",
+  "nickname": "duong3112",
+  "bio": "This is my bio",
+  "location": "Ho Chi Minh City",
+  "hometown": "Vietnam",
+  "marital_status": "single",
+  "avatar_url": "https://example.com/avatar.jpg",
+  "cover_url": "https://example.com/cover.jpg",
+  "extra": {
+    "phone": "0123456789",
+    "website": "https://example.com"
+  },
+  "date_of_birth": "2003-01-30"
+}
