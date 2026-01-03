@@ -6,6 +6,7 @@ import os
 import uuid
 from pathlib import Path
 from Connection import connection
+from Service.cloudinary_service import upload_image_to_cloudinary
 from Entity.auth import LoginRequest, RegisterRequest
 from Entity.profile import UpdateProfileRequest
 from Entity.image import CreateImageRequest, UpdateImageRequest
@@ -29,15 +30,22 @@ from Service.product_image_service import ProductImageService
 
 app = FastAPI()
 
-# Tạo thư mục uploads nếu chưa có
-UPLOAD_DIR = Path("uploads")
-UPLOAD_IMAGES_DIR = UPLOAD_DIR / "images"
-UPLOAD_PRODUCTS_DIR = UPLOAD_DIR / "products"
-UPLOAD_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-UPLOAD_PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
+# Kiểm tra xem có dùng Cloudinary không (nếu có env variables)
+USE_CLOUDINARY = bool(
+    os.getenv("CLOUDINARY_CLOUD_NAME") and 
+    os.getenv("CLOUDINARY_API_KEY") and 
+    os.getenv("CLOUDINARY_API_SECRET")
+)
 
-# Mount static files để serve ảnh
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Nếu không dùng Cloudinary, tạo thư mục uploads local (cho development)
+if not USE_CLOUDINARY:
+    UPLOAD_DIR = Path("uploads")
+    UPLOAD_IMAGES_DIR = UPLOAD_DIR / "images"
+    UPLOAD_PRODUCTS_DIR = UPLOAD_DIR / "products"
+    UPLOAD_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    UPLOAD_PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
+    # Mount static files để serve ảnh
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Cấu hình CORS
 app.add_middleware(
@@ -175,24 +183,44 @@ async def upload_image(file: UploadFile = File(...), token: str = None):
         if not file.content_type or not file.content_type.startswith('image/'):
             raise HTTPException(status_code=400, detail="File phải là ảnh")
         
-        # Tạo tên file unique
-        file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
-        unique_filename = f"{uuid.uuid4()}{file_ext}"
-        file_path = UPLOAD_IMAGES_DIR / unique_filename
+        # Đọc nội dung file
+        content = await file.read()
         
-        # Lưu file
-        with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
-        
-        # Trả về đường dẫn (full URL)
-        image_url = f"http://127.0.0.1:8000/uploads/images/{unique_filename}"
-        return {
-            "status": "success",
-            "message": "Upload thành công",
-            "image_url": image_url,
-            "filename": unique_filename
-        }
+        # Upload lên Cloudinary hoặc lưu local
+        if USE_CLOUDINARY:
+            # Upload lên Cloudinary
+            file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
+            public_id = f"images/{uuid.uuid4()}"
+            
+            result = await upload_image_to_cloudinary(
+                file_content=content,
+                folder="uploads/images",
+                public_id=public_id
+            )
+            
+            return {
+                "status": "success",
+                "message": "Upload thành công",
+                "image_url": result["image_url"],
+                "public_id": result["public_id"]
+            }
+        else:
+            # Lưu local (development)
+            file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
+            unique_filename = f"{uuid.uuid4()}{file_ext}"
+            file_path = UPLOAD_IMAGES_DIR / unique_filename
+            
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
+            
+            # Trả về đường dẫn (full URL)
+            image_url = f"http://127.0.0.1:8000/uploads/images/{unique_filename}"
+            return {
+                "status": "success",
+                "message": "Upload thành công",
+                "image_url": image_url,
+                "filename": unique_filename
+            }
     except HTTPException:
         raise
     except Exception as e:
@@ -212,24 +240,44 @@ async def upload_product_image(file: UploadFile = File(...), token: str = None):
         if not file.content_type or not file.content_type.startswith('image/'):
             raise HTTPException(status_code=400, detail="File phải là ảnh")
         
-        # Tạo tên file unique
-        file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
-        unique_filename = f"{uuid.uuid4()}{file_ext}"
-        file_path = UPLOAD_PRODUCTS_DIR / unique_filename
+        # Đọc nội dung file
+        content = await file.read()
         
-        # Lưu file
-        with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
-        
-        # Trả về đường dẫn (full URL)
-        image_url = f"http://127.0.0.1:8000/uploads/products/{unique_filename}"
-        return {
-            "status": "success",
-            "message": "Upload thành công",
-            "image_url": image_url,
-            "filename": unique_filename
-        }
+        # Upload lên Cloudinary hoặc lưu local
+        if USE_CLOUDINARY:
+            # Upload lên Cloudinary
+            file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
+            public_id = f"products/{uuid.uuid4()}"
+            
+            result = await upload_image_to_cloudinary(
+                file_content=content,
+                folder="uploads/products",
+                public_id=public_id
+            )
+            
+            return {
+                "status": "success",
+                "message": "Upload thành công",
+                "image_url": result["image_url"],
+                "public_id": result["public_id"]
+            }
+        else:
+            # Lưu local (development)
+            file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
+            unique_filename = f"{uuid.uuid4()}{file_ext}"
+            file_path = UPLOAD_PRODUCTS_DIR / unique_filename
+            
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
+            
+            # Trả về đường dẫn (full URL)
+            image_url = f"http://127.0.0.1:8000/uploads/products/{unique_filename}"
+            return {
+                "status": "success",
+                "message": "Upload thành công",
+                "image_url": image_url,
+                "filename": unique_filename
+            }
     except HTTPException:
         raise
     except Exception as e:
