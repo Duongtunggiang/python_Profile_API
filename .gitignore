@@ -37,3 +37,9 @@ dist/
 build/
 *.egg-info/
 
+# Uploaded files
+uploads/images/*
+!uploads/images/.gitkeep
+uploads/products/*
+!uploads/products/.gitkeep
+

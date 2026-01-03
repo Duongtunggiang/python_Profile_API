@@ -1,5 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+import uuid
+from pathlib import Path
 from Connection import connection
 from Entity.auth import LoginRequest, RegisterRequest
 from Entity.profile import UpdateProfileRequest
@@ -23,6 +28,16 @@ from Service.product_service import ProductService
 from Service.product_image_service import ProductImageService
 
 app = FastAPI()
+
+# Tạo thư mục uploads nếu chưa có
+UPLOAD_DIR = Path("uploads")
+UPLOAD_IMAGES_DIR = UPLOAD_DIR / "images"
+UPLOAD_PRODUCTS_DIR = UPLOAD_DIR / "products"
+UPLOAD_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+UPLOAD_PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Mount static files để serve ảnh
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Cấu hình CORS
 app.add_middleware(
@@ -144,6 +159,81 @@ async def get_public_profile_all():
     except Exception as e:
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Failed to get public profile all: {str(e)}")
+
+
+# ========== UPLOAD ROUTES ==========
+@app.post("/upload/image")
+async def upload_image(file: UploadFile = File(...), token: str = None):
+    """Upload ảnh và trả về đường dẫn"""
+    try:
+        # Kiểm tra token nếu có
+        if token:
+            from Service.base_service import get_user_and_client
+            get_user_and_client(token)
+        
+        # Kiểm tra file type
+        if not file.content_type or not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File phải là ảnh")
+        
+        # Tạo tên file unique
+        file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = UPLOAD_IMAGES_DIR / unique_filename
+        
+        # Lưu file
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Trả về đường dẫn (full URL)
+        image_url = f"http://127.0.0.1:8000/uploads/images/{unique_filename}"
+        return {
+            "status": "success",
+            "message": "Upload thành công",
+            "image_url": image_url,
+            "filename": unique_filename
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload thất bại: {str(e)}")
+
+
+@app.post("/upload/product-image")
+async def upload_product_image(file: UploadFile = File(...), token: str = None):
+    """Upload ảnh sản phẩm và trả về đường dẫn"""
+    try:
+        # Kiểm tra token nếu có
+        if token:
+            from Service.base_service import get_user_and_client
+            get_user_and_client(token)
+        
+        # Kiểm tra file type
+        if not file.content_type or not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File phải là ảnh")
+        
+        # Tạo tên file unique
+        file_ext = os.path.splitext(file.filename)[1] if file.filename else '.jpg'
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = UPLOAD_PRODUCTS_DIR / unique_filename
+        
+        # Lưu file
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Trả về đường dẫn (full URL)
+        image_url = f"http://127.0.0.1:8000/uploads/products/{unique_filename}"
+        return {
+            "status": "success",
+            "message": "Upload thành công",
+            "image_url": image_url,
+            "filename": unique_filename
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload thất bại: {str(e)}")
 
 
 # ========== IMAGES ROUTES ==========
