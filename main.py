@@ -32,7 +32,11 @@ from Service.product_image_service import ProductImageService
 from Service.skill_service import SkillService
 from Service.target_service import TargetService
 
-app = FastAPI()
+app = FastAPI(
+    title="Profile API",
+    description="API for Profile Management",
+    version="1.0.0"
+)
 
 # Kiểm tra xem có dùng Cloudinary không (nếu có env variables)
 USE_CLOUDINARY = bool(
@@ -70,6 +74,16 @@ app.add_middleware(
 
 
 
+
+@app.get("/")
+async def root():
+    """Root endpoint - API information"""
+    return {
+        "message": "Profile API",
+        "version": "1.0.0",
+        "status": "running",
+        "docs": "/docs"
+    }
 
 @app.get("/all")
 async def all_():
