@@ -38,6 +38,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Kiểm tra xem có đang chạy trên Vercel không
+IS_VERCEL = os.getenv("VERCEL") == "1"
+
 # Kiểm tra xem có dùng Cloudinary không (nếu có env variables)
 USE_CLOUDINARY = bool(
     os.getenv("CLOUDINARY_CLOUD_NAME") and 
@@ -45,15 +48,26 @@ USE_CLOUDINARY = bool(
     os.getenv("CLOUDINARY_API_SECRET")
 )
 
-# Nếu không dùng Cloudinary, tạo thư mục uploads local (cho development)
-if not USE_CLOUDINARY:
+# Trên Vercel, bắt buộc phải dùng Cloudinary (không thể lưu file local)
+if IS_VERCEL and not USE_CLOUDINARY:
+    raise RuntimeError(
+        "Cloudinary configuration required on Vercel. "
+        "Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables."
+    )
+
+# Nếu không dùng Cloudinary và không phải Vercel, tạo thư mục uploads local (cho development)
+if not USE_CLOUDINARY and not IS_VERCEL:
     UPLOAD_DIR = Path("uploads")
     UPLOAD_IMAGES_DIR = UPLOAD_DIR / "images"
     UPLOAD_PRODUCTS_DIR = UPLOAD_DIR / "products"
-    UPLOAD_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-    UPLOAD_PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
-    # Mount static files để serve ảnh
-    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+    try:
+        UPLOAD_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+        UPLOAD_PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
+        # Mount static files để serve ảnh (chỉ khi không phải Vercel)
+        app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+    except Exception as e:
+        print(f"Warning: Could not create upload directories or mount static files: {e}")
+        print("Local file uploads will not be available. Please use Cloudinary instead.")
 
 # Cấu hình CORS
 app.add_middleware(
