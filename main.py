@@ -41,6 +41,16 @@ app = FastAPI(
 # Kiểm tra xem có đang chạy trên Vercel không
 IS_VERCEL = os.getenv("VERCEL") == "1"
 
+# Debug: Log env vars on Vercel (chỉ khi cần debug)
+if IS_VERCEL:
+    cloudinary_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+    cloudinary_key = os.getenv("CLOUDINARY_API_KEY")
+    cloudinary_secret = os.getenv("CLOUDINARY_API_SECRET")
+    print(f"[DEBUG] IS_VERCEL: {IS_VERCEL}")
+    print(f"[DEBUG] CLOUDINARY_CLOUD_NAME: {'SET' if cloudinary_name else 'NOT SET'}")
+    print(f"[DEBUG] CLOUDINARY_API_KEY: {'SET' if cloudinary_key else 'NOT SET'}")
+    print(f"[DEBUG] CLOUDINARY_API_SECRET: {'SET' if cloudinary_secret else 'NOT SET'}")
+
 # Kiểm tra xem có dùng Cloudinary không (nếu có env variables)
 USE_CLOUDINARY = bool(
     os.getenv("CLOUDINARY_CLOUD_NAME") and 
@@ -52,7 +62,8 @@ USE_CLOUDINARY = bool(
 if IS_VERCEL and not USE_CLOUDINARY:
     raise RuntimeError(
         "Cloudinary configuration required on Vercel. "
-        "Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables."
+        "Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables. "
+        "Make sure to redeploy after setting environment variables."
     )
 
 # Nếu không dùng Cloudinary và không phải Vercel, tạo thư mục uploads local (cho development)
