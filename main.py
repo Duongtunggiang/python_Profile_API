@@ -90,6 +90,9 @@ app.add_middleware(
         "http://127.0.0.1:3002",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
+        "https://*.vercel.app",  # Allow all Vercel preview deployments
+        # Thêm domain production frontend của bạn ở đây nếu có
+        # "https://your-frontend-domain.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
