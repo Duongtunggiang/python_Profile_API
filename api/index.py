@@ -18,15 +18,7 @@ except Exception as e:
     traceback.print_exc()
     raise
 
-# Sử dụng Mangum adapter để wrap FastAPI app cho Vercel
-# Mangum chuyển đổi ASGI app (FastAPI) thành AWS Lambda handler format
-# mà Vercel Python runtime có thể sử dụng
-try:
-    from mangum import Mangum
-    handler = Mangum(app, lifespan="off")
-    print("Successfully created Mangum handler")
-except Exception as e:
-    print(f"Failed to create Mangum handler: {e}")
-    # Fallback: export app directly (may not work on all Vercel versions)
-    handler = app
-    print("Falling back to direct app export")
+# Vercel Python runtime automatically handles ASGI apps (FastAPI)
+# Export app directly - no need for Mangum with newer Vercel Python runtime
+handler = app
+print("Handler exported as FastAPI app (ASGI)")
