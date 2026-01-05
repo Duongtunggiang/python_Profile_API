@@ -18,10 +18,15 @@ except Exception as e:
     traceback.print_exc()
     raise
 
-# Vercel cần handler function để expose FastAPI app
-# Vercel Python runtime sẽ tự động wrap FastAPI app thành ASGI handler
-# Tất cả routes từ main.py sẽ hoạt động bình thường
-# Environment variables từ Vercel sẽ tự động được inject
-
-# Export handler cho Vercel
-handler = app
+# Sử dụng Mangum adapter để wrap FastAPI app cho Vercel
+# Mangum chuyển đổi ASGI app (FastAPI) thành AWS Lambda handler format
+# mà Vercel Python runtime có thể sử dụng
+try:
+    from mangum import Mangum
+    handler = Mangum(app, lifespan="off")
+    print("Successfully created Mangum handler")
+except Exception as e:
+    print(f"Failed to create Mangum handler: {e}")
+    # Fallback: export app directly (may not work on all Vercel versions)
+    handler = app
+    print("Falling back to direct app export")
