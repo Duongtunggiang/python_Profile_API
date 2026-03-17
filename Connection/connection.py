@@ -2,7 +2,10 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# Trên Vercel không gọi load_dotenv() để tránh [Errno 16] Device or resource busy
+# (biến môi trường đã được inject sẵn; load_dotenv() đọc file .env có thể gây lỗi trên serverless)
+if os.getenv("VERCEL") != "1":
+    load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ruejwdwmbxsayfmcqqxv.supabase.co")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")

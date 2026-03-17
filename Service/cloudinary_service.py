@@ -4,7 +4,9 @@ from cloudinary.utils import cloudinary_url
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Trên Vercel không gọi load_dotenv() để tránh [Errno 16] Device or resource busy
+if os.getenv("VERCEL") != "1":
+    load_dotenv()
 
 # Cấu hình Cloudinary
 cloudinary.config(

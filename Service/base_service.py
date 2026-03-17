@@ -43,9 +43,7 @@ def serialize_dates(data: Dict[str, Any]) -> Dict[str, Any]:
 def get_public_client():
     """Tạo Supabase client mới với service role key để bypass RLS cho public endpoints"""
     import os
-    from dotenv import load_dotenv
-    
-    load_dotenv()
+    # Không gọi load_dotenv() ở đây: trên Vercel gây [Errno 16]; local đã load ở Connection
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     
