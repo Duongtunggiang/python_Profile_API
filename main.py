@@ -85,10 +85,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         # "http://localhost:3002",
-        "http://localhost:3000",
+        # "http://localhost:3000",
         # "http://localhost:5173",
         # "http://127.0.0.1:3002",
-        "http://127.0.0.1:3000",
+        # "http://127.0.0.1:3000",
         # "http://127.0.0.1:5173",
         # "https://*.vercel.app",  # Allow all Vercel preview deployments
         # # Thêm domain production frontend của bạn ở đây nếu có
