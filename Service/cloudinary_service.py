@@ -8,13 +8,21 @@ from dotenv import load_dotenv
 if os.getenv("VERCEL") != "1":
     load_dotenv()
 
-# Cấu hình Cloudinary
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True
-)
+_cloudinary_configured = False
+
+
+def _ensure_cloudinary_config():
+    """Gọi cloudinary.config() lần đầu khi cần (lazy), tránh I/O lúc import trên Vercel."""
+    global _cloudinary_configured
+    if _cloudinary_configured:
+        return
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+        secure=True
+    )
+    _cloudinary_configured = True
 
 
 async def upload_image_to_cloudinary(file_content: bytes, folder: str = "uploads", public_id: str = None):
@@ -30,6 +38,7 @@ async def upload_image_to_cloudinary(file_content: bytes, folder: str = "uploads
         dict: Chứa image_url và public_id
     """
     try:
+        _ensure_cloudinary_config()
         # Upload lên Cloudinary
         upload_result = cloudinary.uploader.upload(
             file_content,
@@ -67,6 +76,7 @@ async def delete_image_from_cloudinary(public_id: str):
         dict: Kết quả xóa
     """
     try:
+        _ensure_cloudinary_config()
         result = cloudinary.uploader.destroy(public_id, resource_type="image")
         return {
             "status": "success" if result.get("result") == "ok" else "failed",

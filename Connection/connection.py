@@ -39,16 +39,21 @@ def get_supabase_client() -> Client:
             "Please add SUPABASE_ANON_KEY to your .env file.\n"
             "Get it from: Supabase Dashboard > Settings > API > Project API keys"
         )
-    # Trên Vercel: tạo client mới mỗi request để tránh [Errno 16] do shared connection/state
-    if IS_VERCEL:
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
-    # Local: dùng client cache
     global supabase
     if supabase is not None:
         return supabase
-    try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        return supabase
-    except Exception as e:
-        raise Exception(f"Failed to create Supabase client: {e}")
+    # Lazy init (cả Vercel và local): chỉ gọi create_client khi có request đầu tiên
+    import time
+    for attempt in range(2):
+        try:
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            return supabase
+        except OSError as e:
+            supabase = None
+            if getattr(e, "errno", None) == 16 and attempt == 0:
+                time.sleep(0.3)
+                continue
+            raise Exception(f"Failed to create Supabase client: {e}")
+        except Exception as e:
+            raise Exception(f"Failed to create Supabase client: {e}")
 

@@ -3,6 +3,11 @@ from supabase import create_client
 from Connection import connection
 from datetime import date, datetime
 from typing import Any, Dict
+import os
+import time
+
+# Client dùng cho public endpoints (service_role), lazy init + cache để tránh [Errno 16] trên Vercel
+_public_client = None
 
 
 def get_user_and_client(token: str):
@@ -41,14 +46,22 @@ def serialize_dates(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_public_client():
-    """Tạo Supabase client mới với service role key để bypass RLS cho public endpoints"""
-    import os
-    # Không gọi load_dotenv() ở đây: trên Vercel gây [Errno 16]; local đã load ở Connection
-    SUPABASE_URL = os.getenv("SUPABASE_URL")
-    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    
+    """Supabase client với service role key cho public endpoints (lazy init + cache, tránh EBUSY trên Vercel)."""
+    global _public_client
+    if _public_client is not None:
+        return _public_client
+    SUPABASE_URL = os.getenv("SUPABASE_URL") or connection.SUPABASE_URL
+    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or connection.SUPABASE_SERVICE_ROLE_KEY
     if not SUPABASE_SERVICE_ROLE_KEY:
         raise HTTPException(status_code=500, detail="SUPABASE_SERVICE_ROLE_KEY not configured")
-    
-    # Tạo client mới mỗi lần để tránh bị ảnh hưởng bởi authentication state
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    for attempt in range(2):
+        try:
+            _public_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+            return _public_client
+        except OSError as e:
+            if getattr(e, "errno", None) == 16 and attempt == 0:
+                time.sleep(0.3)
+                continue
+            raise HTTPException(status_code=500, detail=f"Failed to create public client: {e}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to create public client: {e}")
