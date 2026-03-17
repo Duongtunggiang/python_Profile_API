@@ -33,16 +33,19 @@ elif not SUPABASE_KEY:
 
 
 def get_supabase_client() -> Client:
-    global supabase
-    if supabase is not None:
-        return supabase
     if not SUPABASE_KEY:
         raise Exception(
             "Supabase client is not initialized.\n"
             "Please add SUPABASE_ANON_KEY to your .env file.\n"
             "Get it from: Supabase Dashboard > Settings > API > Project API keys"
         )
-    # Trên Vercel: tạo client lần đầu khi có request (lazy init)
+    # Trên Vercel: tạo client mới mỗi request để tránh [Errno 16] do shared connection/state
+    if IS_VERCEL:
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    # Local: dùng client cache
+    global supabase
+    if supabase is not None:
+        return supabase
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         return supabase
