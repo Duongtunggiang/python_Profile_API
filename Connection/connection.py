@@ -13,9 +13,11 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 SUPABASE_KEY = SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY
 
-# Create Supabase client
+# Global client — trên Vercel không tạo lúc import để tránh [Errno 16] lúc cold start
 supabase: Client = None
-if SUPABASE_KEY:
+IS_VERCEL = os.getenv("VERCEL") == "1"
+
+if not IS_VERCEL and SUPABASE_KEY:
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         print("Supabase client initialized successfully")
@@ -23,16 +25,27 @@ if SUPABASE_KEY:
         print(f"Failed to create Supabase client: {e}")
         print("Please check your SUPABASE_ANON_KEY in .env file")
         print("Get it from: Supabase Dashboard > Settings > API > Project API keys")
-else:
+elif IS_VERCEL and not SUPABASE_KEY:
+    print("SUPABASE_ANON_KEY/SUPABASE_SERVICE_ROLE_KEY not set on Vercel")
+elif not SUPABASE_KEY:
     print("SUPABASE_ANON_KEY not found in .env file")
     print("Please add it from: Supabase Dashboard > Settings > API")
 
-def get_supabase_client():
-    if supabase is None:
+
+def get_supabase_client() -> Client:
+    global supabase
+    if supabase is not None:
+        return supabase
+    if not SUPABASE_KEY:
         raise Exception(
             "Supabase client is not initialized.\n"
             "Please add SUPABASE_ANON_KEY to your .env file.\n"
             "Get it from: Supabase Dashboard > Settings > API > Project API keys"
         )
-    return supabase
+    # Trên Vercel: tạo client lần đầu khi có request (lazy init)
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        return supabase
+    except Exception as e:
+        raise Exception(f"Failed to create Supabase client: {e}")
 
